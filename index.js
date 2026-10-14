@@ -17,6 +17,7 @@ const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("Pets-Adoption");
 const petsCollections = db.collection("pets");
 const petsRequests = db.collection("petsRequests");
+const wishlistsCollection = db.collection("wishlists");
 
 export async function connectToMongoDB() {
   await client.connect();
@@ -70,8 +71,8 @@ app.patch("/pets/update-pet/:id", async (req, res) => {
 
 app.delete("/pets/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(id ,'id');
-  const result = await petsCollections.deleteOne({_id: new ObjectId(id)});
+  console.log(id, "id");
+  const result = await petsCollections.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
 });
 
@@ -82,17 +83,87 @@ app.post("/adoption-requests", async (req, res) => {
   // console.log(result);
   res.send(result);
 });
-app.get ("/adoption-requests/:userId", async(req,res) => {
-  const {userId} = req.params;
-  const result = await petsRequests.find({userId}).toArray();
+app.get("/adoption-requests/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const result = await petsRequests.find({ userId }).toArray();
   console.log(result);
   res.send(result);
-})
+});
 app.delete("/adoption-requests/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(id ,'id');
-  const result = await petsRequests.deleteOne({_id: new ObjectId(id)});
+  console.log(id, "id");
+  const result = await petsRequests.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
+});
+
+app.post("/wishlist", async (req, res) => {
+  try {
+    const wishlistData = req.body;
+    const { userId, petId } = wishlistData;
+    if (!userId || !petId) {
+      return res
+        .status(400)
+        .json({ message: "User ID and Pet ID are required" });
+    }
+    const existingPet = await wishlistsCollection.findOne({
+      userId: String(userId),
+      petId: String(petId),
+    });
+    if (existingPet) {
+      return res
+        .status(409)
+        .json({ message: "Pet is already in your wishlist" });
+    }
+    const result = await wishlistsCollection.insertOne({
+      ...wishlistData,
+      userId: String(userId),
+      petId: String(petId),
+      createdAt: new Date(),
+    });
+    res
+      .status(201)
+      .json({ message: "Added to wishlist", insertedId: result.insertedId });
+  } catch (error) {
+    console.error("Add wishlist error:", error);
+    res.status(500).json({ message: "Failed to add to wishlist" });
+  }
+});
+
+app.get("/wishlist", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    const wishlist = await wishlistsCollection
+      .find({ userId: String(userId) })
+      .toArray();
+    res.json(wishlist);
+  } catch (error) {
+    console.error("Get wishlist error:", error);
+    res.status(500).json({ message: "Failed to load wishlist" });
+  }
+});
+
+app.delete("/wishlist/:petId", async (req, res) => {
+  try {
+    const { petId } = req.params;
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    const result = await wishlistsCollection.deleteOne({
+      userId: String(userId),
+      petId: String(petId),
+    });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Wishlist item not found" });
+    }
+    res.json({ message: "Removed from wishlist" });
+  } catch (error) {
+    console.error("Delete wishlist error:", error);
+    res.status(500).json({ message: "Failed to remove from wishlist" });
+  }
 });
 
 async function startServer() {
