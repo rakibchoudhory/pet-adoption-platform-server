@@ -42,17 +42,6 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-export async function connectToMongoDB() {
-  await client.connect();
-
-  console.log("You successfully connected to MongoDB!");
-
-  return client;
-}
-
-export async function disconnectFromMongoDB() {
-  await client.close();
-}
 
 app.get("/", (req, res) => {
   res.send("Pet Adoption Backend is running!");
@@ -189,16 +178,14 @@ app.delete("/wishlist/:petId",verifyToken, async (req, res) => {
   }
 });
 
-async function startServer() {
-  try {
-    await connectToMongoDB();
+await client.connect();
 
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
-    });
-  } catch (error) {
-    console.error("Backend startup failed:", error);
-    process.exit(1);
-  }
+export async function disconnectFromMongoDB() {
+    await client.close();
 }
-startServer();
+
+ app.listen(port, () => {
+  console.log(`Server running on port ${port}`)
+});
+
+export default app;
