@@ -180,12 +180,15 @@ app.delete("/wishlist/:petId",verifyToken, async (req, res) => {
 
 await client.connect();
 
-export async function disconnectFromMongoDB() {
-    await client.close();
+async function disconnectFromMongoDB() {
+  await client.close();
 }
+
+module.exports = {
+  app,
+  disconnectFromMongoDB,
+};
 
  app.listen(port, () => {
   console.log(`Server running on port ${port}`)
 });
-
-export default app;
