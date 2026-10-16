@@ -1,8 +1,8 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const { MongoClient, ObjectId } = require("mongodb");
-const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { MongoClient, ObjectId } from "mongodb";
+import { createRemoteJWKSet, jwtVerify } from "jose-cjs";
 
 dotenv.config();
 
@@ -23,25 +23,24 @@ const wishlistsCollection = db.collection("wishlists");
 const JWKS = createRemoteJWKSet(new URL(`${process.env.Client_URL}/api/auth/jwks`));
 
 const verifyToken = async (req, res, next) => {
-  // const authHeader = req.headers.authorization;
-  // if (!authHeader) {
-  //   return res.status(401).json({ massage: "Unauthorized" });
-  // }
-  // const token = authHeader.split(" ")[1];
-  // if (!token) {
-  //   return res.status(401).json({ massage: "Unauthorized" });
-  // }
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ massage: "Unauthorized" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ massage: "Unauthorized" });
+  }
   // console.log(token, "token");
 
-  // try {
-  //   const { payload } = await jwtVerify(token, JWKS);
-  //   console.log(payload);
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    console.log(payload);
     next();
-  // } catch (error) {
-  //   return res.status(403).json({ massage: "Forbidden" });
-  // }
+  } catch (error) {
+    return res.status(403).json({ massage: "Forbidden" });
+  }
 };
-
 
 app.get("/", (req, res) => {
   res.send("Pet Adoption Backend is running!");
@@ -180,15 +179,12 @@ app.delete("/wishlist/:petId",verifyToken, async (req, res) => {
 
 await client.connect();
 
-async function disconnectFromMongoDB() {
-  await client.close();
+export async function disconnectFromMongoDB() {
+    await client.close();
 }
-
-module.exports = {
-  app,
-  disconnectFromMongoDB,
-};
 
  app.listen(port, () => {
   console.log(`Server running on port ${port}`)
 });
+
+export default app;
