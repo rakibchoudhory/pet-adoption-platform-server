@@ -38,8 +38,12 @@ const verifyToken = async (req, res, next) => {
     console.log(payload);
     next();
   } catch (error) {
-    return res.status(403).json({ massage: "Forbidden" });
-  }
+  console.error("Token verification failed:", error.message);
+
+  return res.status(403).json({
+    message: "Forbidden",
+  });
+}
 };
 
 app.get("/", (req, res) => {
